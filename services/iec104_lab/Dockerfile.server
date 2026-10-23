@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc g++ make cmake libssl-dev git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Clone and build lib60870-C Python bindings via c104 (Fraunhofer wrapper)
+# c104 wraps lib60870 and provides Python IEC 60870-5-104 support
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 2404
+
+CMD ["python", "server.py"]

@@ -1,0 +1,107 @@
+# Solar Farm Inverter Modbus Register Map — Single Source of Truth
+# All addresses are zero-based PDU addresses.
+# HMI (FUXA) must use these same addresses.
+# Applies to inverter1, inverter2, inverter3.
+
+version: "1.0"
+unit_id: 1   # Modbus unit/slave ID used by all inverters
+
+# ── Input Registers (FC04 Read) — read-only telemetry ──────────────────────
+input_registers:
+  - address: 0
+    name: active_power
+    description: "Active power output"
+    unit: W
+    scale: 1        # raw value is in Watts
+    min: 0
+    max: 250000     # 250 kW max per inverter
+
+  - address: 1
+    name: ac_voltage
+    description: "AC output voltage (phase-to-neutral)"
+    unit: V
+    scale: 10       # raw / 10 = volts (e.g. 2300 → 230.0 V)
+    min: 0
+    max: 2800       # 280.0 V max
+
+  - address: 2
+    name: operating_status
+    description: "Inverter operating state"
+    unit: enum
+    scale: 1
+    values:
+      0: stopped
+      1: starting
+      2: running
+      3: fault
+      4: standby
+
+  - address: 3
+    name: temperature
+    description: "Inverter internal temperature"
+    unit: degC
+    scale: 10       # raw / 10 = °C (e.g. 452 → 45.2 °C)
+    min: -200       # −20.0 °C
+    max: 850        # 85.0 °C
+
+  - address: 4
+    name: dc_input_voltage
+    description: "DC bus (PV panel) input voltage"
+    unit: V
+    scale: 10
+    min: 0
+    max: 8000       # 800.0 V
+
+  - address: 5
+    name: ac_current
+    description: "AC output current"
+    unit: A
+    scale: 100      # raw / 100 = A (e.g. 12050 → 120.50 A)
+    min: 0
+    max: 120000
+
+  - address: 6
+    name: daily_energy
+    description: "Energy generated today"
+    unit: Wh
+    scale: 1
+    min: 0
+    max: 2000000    # 2 MWh/day max
+
+# ── Holding Registers (FC03 Read / FC06,FC16 Write) — control/setpoints ──
+holding_registers:
+  - address: 0
+    name: active_power_setpoint
+    description: "Active power output setpoint (writable)"
+    unit: W
+    scale: 1
+    min: 0
+    max: 250000
+    writable: true
+    protected: true   # write from non-approved source → PROTECTED_SETPOINT_CHANGE alert
+
+  - address: 1
+    name: voltage_setpoint
+    description: "AC voltage regulation setpoint (writable)"
+    unit: V
+    scale: 10
+    min: 2000
+    max: 2600
+    writable: true
+    protected: false
+
+  - address: 2
+    name: ramp_rate
+    description: "Power ramp-up rate (W/s, writable)"
+    unit: W/s
+    scale: 1
+    min: 0
+    max: 10000
+    writable: true
+    protected: false
+
+# ── Detection thresholds ──────────────────────────────────────────────────
+detection:
+  setpoint_register_address: 0   # holding register 0 = active_power_setpoint (protected)
+  write_burst_threshold: 10      # number of write requests within burst_window_seconds
+  burst_window_seconds: 30

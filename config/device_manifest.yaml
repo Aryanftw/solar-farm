@@ -1,0 +1,179 @@
+# Solar Farm Lab — Authorised Device Manifest
+# Every device in this file is considered "authorised".
+# Any IP/MAC observed that is NOT in this list triggers UNKNOWN_DEVICE alert.
+# Source of truth for device identity, role, and allowed protocols.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+devices:
+  - id: inverter-1
+    hostname: inverter1
+    ip: "172.20.0.11"
+    mac: unknown/not_observable   # container bridge – L2 MAC not always visible
+    role: inverter
+    protocols:
+      - name: modbus-tcp
+        port: 502
+    authorised: true
+    description: "Solar inverter simulator #1 (PyModbus)"
+
+  - id: inverter-2
+    hostname: inverter2
+    ip: "172.20.0.12"
+    mac: unknown/not_observable
+    role: inverter
+    protocols:
+      - name: modbus-tcp
+        port: 502
+    authorised: true
+    description: "Solar inverter simulator #2 (PyModbus)"
+
+  - id: inverter-3
+    hostname: inverter3
+    ip: "172.20.0.13"
+    mac: unknown/not_observable
+    role: inverter
+    protocols:
+      - name: modbus-tcp
+        port: 502
+    authorised: true
+    description: "Solar inverter simulator #3 (PyModbus)"
+
+  - id: openplc
+    hostname: openplc
+    ip: "172.20.0.20"
+    mac: unknown/not_observable
+    role: plc_rtu
+    protocols:
+      - name: modbus-tcp
+        port: 502
+    authorised: true
+    description: "OpenPLC Runtime RTU/PLC"
+
+  - id: iec104-endpoint
+    hostname: iec104_server
+    ip: "172.20.0.30"
+    mac: unknown/not_observable
+    role: iec104_endpoint
+    protocols:
+      - name: iec60870-5-104
+        port: 2404
+    authorised: true
+    description: "IEC 60870-5-104 server endpoint (lib60870)"
+
+  - id: grid-control
+    hostname: iec104_client
+    ip: "172.20.0.31"
+    mac: unknown/not_observable
+    role: grid_control_centre
+    protocols:
+      - name: iec60870-5-104
+        port: 2404
+    authorised: true
+    description: "Fake grid control centre (IEC-104 client)"
+
+  - id: hmi
+    hostname: fuxa
+    ip: "172.20.0.40"
+    mac: unknown/not_observable
+    role: hmi
+    protocols:
+      - name: modbus-tcp
+        port: 502
+    authorised: true
+    description: "FUXA HMI – polls inverters and PLC"
+
+  - id: api
+    hostname: api
+    ip: "172.20.0.50"
+    mac: unknown/not_observable
+    role: backend
+    protocols:
+      - name: http
+        port: 8000
+    authorised: true
+    description: "FastAPI event normaliser / alert backend"
+
+  - id: sensor
+    hostname: sensor
+    ip: "172.20.0.60"
+    mac: unknown/not_observable
+    role: passive_sensor
+    protocols: []
+    authorised: true
+    description: "Zeek passive sensor (receive-only)"
+
+# Authorised Modbus write clients
+# Only these IPs may send FC5/6/15/16 writes
+authorised_modbus_writers:
+  - ip: "172.20.0.40"    # FUXA HMI (control writes only during maintenance window)
+  - ip: "172.20.0.20"    # OpenPLC (internal aggregation writes)
+
+# Authorised IEC-104 masters
+authorised_iec104_masters:
+  - ip: "172.20.0.31"    # Fake grid control centre only
+
+# Approved baseline communication matrix
+# Any communication between known devices that is NOT in this list triggers RULE-009 (PROTOCOL_PEER_DRIFT)
+baseline_communication_matrix:
+  - src: "172.20.0.40"   # FUXA HMI
+    dst: "172.20.0.11"   # Inverter 1
+    protocol: "modbus-tcp"
+    port: 502
+    description: "HMI telemetry polling of Inverter 1"
+
+  - src: "172.20.0.40"   # FUXA HMI
+    dst: "172.20.0.12"   # Inverter 2
+    protocol: "modbus-tcp"
+    port: 502
+    description: "HMI telemetry polling of Inverter 2"
+
+  - src: "172.20.0.40"   # FUXA HMI
+    dst: "172.20.0.13"   # Inverter 3
+    protocol: "modbus-tcp"
+    port: 502
+    description: "HMI telemetry polling of Inverter 3"
+
+  - src: "172.20.0.40"   # FUXA HMI
+    dst: "172.20.0.20"   # OpenPLC
+    protocol: "modbus-tcp"
+    port: 502
+    description: "HMI telemetry polling of OpenPLC RTU"
+
+  - src: "172.20.0.20"   # OpenPLC RTU
+    dst: "172.20.0.11"   # Inverter 1
+    protocol: "modbus-tcp"
+    port: 502
+    description: "OpenPLC aggregation polling of Inverter 1"
+
+  - src: "172.20.0.20"   # OpenPLC RTU
+    dst: "172.20.0.12"   # Inverter 2
+    protocol: "modbus-tcp"
+    port: 502
+    description: "OpenPLC aggregation polling of Inverter 2"
+
+  - src: "172.20.0.20"   # OpenPLC RTU
+    dst: "172.20.0.13"   # Inverter 3
+    protocol: "modbus-tcp"
+    port: 502
+    description: "OpenPLC aggregation polling of Inverter 3"
+
+  - src: "172.20.0.31"   # Grid Control Center
+    dst: "172.20.0.30"   # IEC-104 Substation Server
+    protocol: "iec60870-5-104"
+    port: 2404
+    description: "Grid control center substation telemetry"
+
+  - src: "172.20.0.30"   # IEC-104 Substation Server
+    dst: "172.20.0.50"   # API Gateway
+    protocol: "http"
+    port: 8000
+    description: "IEC-104 event forwarding to API"
+
+  - src: "172.20.0.60"   # Zeek Sensor
+    dst: "172.20.0.50"   # API Gateway
+    protocol: "http"
+    port: 8000
+    description: "Sensor event forwarding to API"
+

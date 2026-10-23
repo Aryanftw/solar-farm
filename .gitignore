@@ -1,0 +1,147 @@
+
+# ==========================================
+# Environment variables and secrets
+# ==========================================
+.env
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+secrets/
+credentials/
+
+# ==========================================
+# Python environments
+# ==========================================
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.python-version
+
+# ==========================================
+# Python tooling and test caches
+# ==========================================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+hypothesis/
+
+# ==========================================
+# Logs and runtime output
+# ==========================================
+*.log
+logs/
+*.pid
+*.seed
+*.out
+*.err
+
+# ==========================================
+# Databases and generated data
+# ==========================================
+*.db
+*.sqlite
+*.sqlite3
+data/
+artifacts/
+reports/generated/
+!reports/generated/.gitkeep
+
+# Keep intentional sample data/configuration if needed.
+# Remove the data/ rule above if your project tracks fixtures there.
+
+# ==========================================
+# PCAPs and network captures
+# ==========================================
+*.pcap
+*.pcapng
+*.cap
+captures/
+
+# ==========================================
+# ML models and large generated files
+# ==========================================
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.joblib
+models/generated/
+
+# ==========================================
+# Node.js
+# ==========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ==========================================
+# Frontend build output
+# ==========================================
+dist/
+build/
+.next/
+.nuxt/
+.vite/
+coverage/
+
+# ==========================================
+# Docker and local overrides
+# ==========================================
+docker-compose.override.yml
+compose.override.yaml
+
+# ==========================================
+# OS and editor files
+# ==========================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==========================================
+# Temporary files
+# ==========================================
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+.cache/
+tmp/
+temp/
+
+# ==========================================
+# Local agent state
+# ==========================================
+.opencode/
+.agents/
+
+# ==========================================
+# Personal / working Markdown documents
+# Keep README.md, ignore these project-specific notes
+# ==========================================
+/CONTINUATION_STATUS.md
+/implementation_plan.md
+/SECURITY.md
+/speak.md
+
+# Keep the main project README tracked
+!/README.md
+!/readme.md

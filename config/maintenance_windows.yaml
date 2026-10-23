@@ -1,0 +1,26 @@
+# Maintenance Window Configuration
+# All times are in UTC. Writes to inverter setpoints outside these windows trigger RULE-004.
+
+version: "1.0"
+timezone: UTC
+
+windows:
+  - id: MW-001
+    name: "Daily maintenance window"
+    description: "Scheduled window for control writes and setpoint changes"
+    days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    start_time: "02:00"   # 02:00 UTC
+    end_time: "04:00"     # 04:00 UTC
+    applies_to_protocols: ["modbus-tcp"]
+    applies_to_hosts:
+      - "172.20.0.40"    # FUXA HMI only
+
+  - id: MW-002
+    name: "Emergency maintenance window"
+    description: "Extended window for emergency setpoint corrections"
+    days: ["monday", "wednesday", "friday"]
+    start_time: "20:00"
+    end_time: "20:30"
+    applies_to_protocols: ["modbus-tcp"]
+    applies_to_hosts:
+      - "172.20.0.40"    # FUXA HMI only

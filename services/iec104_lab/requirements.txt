@@ -1,0 +1,5 @@
+# c104 provides Python bindings for lib60870 IEC 60870-5-104
+# See: https://github.com/Fraunhofer-FIT-DIEN/iec104-python
+c104==1.18.0
+requests==2.32.3
+pyyaml==6.0.2

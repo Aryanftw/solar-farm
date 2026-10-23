@@ -1,0 +1,313 @@
+{
+  "version": "1.00",
+  "projectFile": "/usr/src/app/_appdata/project.json",
+  "server": {
+    "id": "0",
+    "name": "FuxaServer",
+    "type": "FuxaServer",
+    "property": {
+      "address": "0.0.0.0"
+    }
+  },
+  "devices": {
+    "Inverter 1": {
+      "id": "a1000001-1000-4000-8000-000000000001",
+      "name": "Inverter 1",
+      "type": "ModbusTCP",
+      "enabled": true,
+      "polling": 2000,
+      "property": {
+        "address": "172.20.0.11",
+        "port": 502,
+        "slaveid": 1,
+        "polling": 2000
+      },
+      "tags": {
+        "Inv1 Active Power": { "id": "Inv1 Active Power", "name": "Inv1 Active Power", "type": "Int16", "address": "1", "memaddress": "300000", "divisor": 1 },
+        "Inv1 AC Voltage": { "id": "Inv1 AC Voltage", "name": "Inv1 AC Voltage", "type": "Int16", "address": "2", "memaddress": "300000", "divisor": 10 },
+        "Inv1 Status": { "id": "Inv1 Status", "name": "Inv1 Status", "type": "Int16", "address": "3", "memaddress": "300000", "divisor": 1 },
+        "Inv1 Temperature": { "id": "Inv1 Temperature", "name": "Inv1 Temperature", "type": "Int16", "address": "4", "memaddress": "300000", "divisor": 10 }
+      }
+    },
+    "Inverter 2": {
+      "id": "a1000002-1000-4000-8000-000000000002",
+      "name": "Inverter 2",
+      "type": "ModbusTCP",
+      "enabled": true,
+      "polling": 2000,
+      "property": {
+        "address": "172.20.0.12",
+        "port": 502,
+        "slaveid": 1,
+        "polling": 2000
+      },
+      "tags": {
+        "Inv2 Active Power": { "id": "Inv2 Active Power", "name": "Inv2 Active Power", "type": "Int16", "address": "1", "memaddress": "300000", "divisor": 1 },
+        "Inv2 AC Voltage": { "id": "Inv2 AC Voltage", "name": "Inv2 AC Voltage", "type": "Int16", "address": "2", "memaddress": "300000", "divisor": 10 },
+        "Inv2 Status": { "id": "Inv2 Status", "name": "Inv2 Status", "type": "Int16", "address": "3", "memaddress": "300000", "divisor": 1 },
+        "Inv2 Temperature": { "id": "Inv2 Temperature", "name": "Inv2 Temperature", "type": "Int16", "address": "4", "memaddress": "300000", "divisor": 10 }
+      }
+    },
+    "Inverter 3": {
+      "id": "a1000003-1000-4000-8000-000000000003",
+      "name": "Inverter 3",
+      "type": "ModbusTCP",
+      "enabled": true,
+      "polling": 2000,
+      "property": {
+        "address": "172.20.0.13",
+        "port": 502,
+        "slaveid": 1,
+        "polling": 2000
+      },
+      "tags": {
+        "Inv3 Active Power": { "id": "Inv3 Active Power", "name": "Inv3 Active Power", "type": "Int16", "address": "1", "memaddress": "300000", "divisor": 1 },
+        "Inv3 AC Voltage": { "id": "Inv3 AC Voltage", "name": "Inv3 AC Voltage", "type": "Int16", "address": "2", "memaddress": "300000", "divisor": 10 },
+        "Inv3 Status": { "id": "Inv3 Status", "name": "Inv3 Status", "type": "Int16", "address": "3", "memaddress": "300000", "divisor": 1 },
+        "Inv3 Temperature": { "id": "Inv3 Temperature", "name": "Inv3 Temperature", "type": "Int16", "address": "4", "memaddress": "300000", "divisor": 10 }
+      }
+    },
+    "OpenPLC RTU": {
+      "id": "a1000004-1000-4000-8000-000000000004",
+      "name": "OpenPLC RTU",
+      "type": "ModbusTCP",
+      "enabled": true,
+      "polling": 5000,
+      "property": {
+        "address": "172.20.0.20",
+        "port": 502,
+        "slaveid": 1,
+        "polling": 5000
+      },
+      "tags": {
+        "Plant Total Power": { "id": "Plant Total Power", "name": "Plant Total Power", "type": "Int16", "address": "1", "memaddress": "300000", "divisor": 1 },
+        "Plant Avg Voltage": { "id": "Plant Avg Voltage", "name": "Plant Avg Voltage", "type": "Int16", "address": "2", "memaddress": "300000", "divisor": 10 },
+        "Plant Status": { "id": "Plant Status", "name": "Plant Status", "type": "Int16", "address": "3", "memaddress": "300000", "divisor": 1 },
+        "Plant Grid Freq": { "id": "Plant Grid Freq", "name": "Plant Grid Freq", "type": "Int16", "address": "7", "memaddress": "300000", "divisor": 100 }
+      }
+    }
+  },
+  "hmi": {
+    "views": [
+      {
+        "id": "v_solar_farm_main",
+        "name": "Solar Farm Overview",
+        "profile": {
+          "width": 1280,
+          "height": 800,
+          "bkcolor": ""
+        },
+        "items": {
+          "GXP_solar_00001": {
+            "id": "GXP_solar_00001",
+            "type": "svg-ext-gauge_progress",
+            "name": "gauge_1",
+            "property": {
+              "events": [],
+              "actions": [],
+              "ranges": [
+                {
+                  "type": "minmax",
+                  "min": 0,
+                  "max": 100,
+                  "style": [true, true],
+                  "color": "#018ef5ff",
+                  "stroke": ""
+                }
+              ],
+              "variable": "Inv1 Temperature",
+              "variableSrc": "Inverter 1",
+              "variableId": "Inv1 Temperature",
+              "alarmId": "",
+              "alarmSrc": "",
+              "alarm": "",
+              "alarmColor": ""
+            },
+            "label": "Inv1 Temperature"
+          },
+          "VAL_solar_00002": {
+            "id": "VAL_solar_00002",
+            "type": "svg-ext-value",
+            "name": "value_1",
+            "property": {
+              "events": [],
+              "actions": [],
+              "variable": "Inv1 AC Voltage",
+              "variableSrc": "Inverter 1",
+              "variableId": "Inv1 AC Voltage",
+              "alarmId": "",
+              "alarmSrc": "",
+              "alarm": "",
+              "alarmColor": "",
+              "ranges": []
+            },
+            "label": "Inv1 AC Voltage (V)"
+          },
+          "VAL_solar_00003": {
+            "id": "VAL_solar_00003",
+            "type": "svg-ext-value",
+            "name": "value_2",
+            "property": {
+              "events": [],
+              "actions": [],
+              "variable": "Inv1 Active Power",
+              "variableSrc": "Inverter 1",
+              "variableId": "Inv1 Active Power",
+              "alarmId": "",
+              "alarmSrc": "",
+              "alarm": "",
+              "alarmColor": "",
+              "ranges": []
+            },
+            "label": "Inv1 Active Power (W)"
+          },
+          "VAL_solar_00004": {
+            "id": "VAL_solar_00004",
+            "type": "svg-ext-value",
+            "name": "value_3",
+            "property": {
+              "events": [],
+              "actions": [],
+              "variable": "Inv2 AC Voltage",
+              "variableSrc": "Inverter 2",
+              "variableId": "Inv2 AC Voltage",
+              "alarmId": "",
+              "alarmSrc": "",
+              "alarm": "",
+              "alarmColor": "",
+              "ranges": []
+            },
+            "label": "Inv2 AC Voltage (V)"
+          },
+          "VAL_solar_00005": {
+            "id": "VAL_solar_00005",
+            "type": "svg-ext-value",
+            "name": "value_4",
+            "property": {
+              "events": [],
+              "actions": [],
+              "variable": "Inv2 Active Power",
+              "variableSrc": "Inverter 2",
+              "variableId": "Inv2 Active Power",
+              "alarmId": "",
+              "alarmSrc": "",
+              "alarm": "",
+              "alarmColor": "",
+              "ranges": []
+            },
+            "label": "Inv2 Active Power (W)"
+          },
+          "VAL_solar_00006": {
+            "id": "VAL_solar_00006",
+            "type": "svg-ext-value",
+            "name": "value_5",
+            "property": {
+              "events": [],
+              "actions": [],
+              "variable": "Inv3 AC Voltage",
+              "variableSrc": "Inverter 3",
+              "variableId": "Inv3 AC Voltage",
+              "alarmId": "",
+              "alarmSrc": "",
+              "alarm": "",
+              "alarmColor": "",
+              "ranges": []
+            },
+            "label": "Inv3 AC Voltage (V)"
+          },
+          "VAL_solar_00007": {
+            "id": "VAL_solar_00007",
+            "type": "svg-ext-value",
+            "name": "value_6",
+            "property": {
+              "events": [],
+              "actions": [],
+              "variable": "Inv3 Active Power",
+              "variableSrc": "Inverter 3",
+              "variableId": "Inv3 Active Power",
+              "alarmId": "",
+              "alarmSrc": "",
+              "alarm": "",
+              "alarmColor": "",
+              "ranges": []
+            },
+            "label": "Inv3 Active Power (W)"
+          },
+          "VAL_solar_00008": {
+            "id": "VAL_solar_00008",
+            "type": "svg-ext-value",
+            "name": "value_7",
+            "property": {
+              "events": [],
+              "actions": [],
+              "variable": "Plant Avg Voltage",
+              "variableSrc": "OpenPLC RTU",
+              "variableId": "Plant Avg Voltage",
+              "alarmId": "",
+              "alarmSrc": "",
+              "alarm": "",
+              "alarmColor": "",
+              "ranges": []
+            },
+            "label": "Plant Avg Voltage (V)"
+          },
+          "VAL_solar_00009": {
+            "id": "VAL_solar_00009",
+            "type": "svg-ext-value",
+            "name": "value_8",
+            "property": {
+              "events": [],
+              "actions": [],
+              "variable": "Plant Grid Freq",
+              "variableSrc": "OpenPLC RTU",
+              "variableId": "Plant Grid Freq",
+              "alarmId": "",
+              "alarmSrc": "",
+              "alarm": "",
+              "alarmColor": "",
+              "ranges": []
+            },
+            "label": "Plant Grid Frequency (Hz)"
+          },
+          "VAL_solar_00010": {
+            "id": "VAL_solar_00010",
+            "type": "svg-ext-value",
+            "name": "value_9",
+            "property": {
+              "events": [],
+              "actions": [],
+              "variable": "Plant Status",
+              "variableSrc": "OpenPLC RTU",
+              "variableId": "Plant Status",
+              "alarmId": "",
+              "alarmSrc": "",
+              "alarm": "",
+              "alarmColor": "",
+              "ranges": []
+            },
+            "label": "Plant Status (0=stop 1=start 2=run)"
+          },
+          "VAL_solar_00011": {
+            "id": "VAL_solar_00011",
+            "type": "svg-ext-value",
+            "name": "value_10",
+            "property": {
+              "events": [],
+              "actions": [],
+              "variable": "Plant Total Power",
+              "variableSrc": "OpenPLC RTU",
+              "variableId": "Plant Total Power",
+              "alarmId": "",
+              "alarmSrc": "",
+              "alarm": "",
+              "alarmColor": "",
+              "ranges": []
+            },
+            "label": "Plant Total Power (W)"
+          }
+        }
+      }
+    ]
+  },
+  "charts": []
+}

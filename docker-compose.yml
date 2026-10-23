@@ -1,0 +1,248 @@
+# ──────────────────────────────────────────────────────────────────
+# Solar Farm OT Security Watchman — Docker Compose
+# All services run on a private bridge (172.20.0.0/24).
+# Host ports bind to 127.0.0.1 only.
+# IMPORTANT: Live packet capture requires Linux/WSL2 host.
+# On Windows, use 'make demo' which uses PCAP replay mode.
+# ──────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+networks:
+  ot_lab:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+volumes:
+  openplc_data:
+  fuxa_data:
+  db_data:
+  zeek_logs:
+  pcap_data:
+
+services:
+
+  # ── B1: Inverter Simulators ─────────────────────────────────────
+  inverter1:
+    build:
+      context: ./services/inverter_simulator
+      dockerfile: Dockerfile
+    container_name: inverter1
+    hostname: inverter1
+    networks:
+      ot_lab:
+        ipv4_address: 172.20.0.11
+    environment:
+      - INVERTER_ID=1
+      - INVERTER_HOST=0.0.0.0
+      - INVERTER_PORT=502
+      - MODBUS_UNIT_ID=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('127.0.0.1',502)); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  inverter2:
+    build:
+      context: ./services/inverter_simulator
+      dockerfile: Dockerfile
+    container_name: inverter2
+    hostname: inverter2
+    networks:
+      ot_lab:
+        ipv4_address: 172.20.0.12
+    environment:
+      - INVERTER_ID=2
+      - INVERTER_HOST=0.0.0.0
+      - INVERTER_PORT=502
+      - MODBUS_UNIT_ID=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('127.0.0.1',502)); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  inverter3:
+    build:
+      context: ./services/inverter_simulator
+      dockerfile: Dockerfile
+    container_name: inverter3
+    hostname: inverter3
+    networks:
+      ot_lab:
+        ipv4_address: 172.20.0.13
+    environment:
+      - INVERTER_ID=3
+      - INVERTER_HOST=0.0.0.0
+      - INVERTER_PORT=502
+      - MODBUS_UNIT_ID=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('127.0.0.1',502)); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── B1: OpenPLC RTU/PLC ─────────────────────────────────────────
+  openplc:
+    build:
+      context: ./services/openplc
+      dockerfile: Dockerfile
+    container_name: openplc
+    hostname: openplc
+    networks:
+      ot_lab:
+        ipv4_address: 172.20.0.20
+    ports:
+      - "127.0.0.1:8080:8080"    # OpenPLC web interface (local only)
+    volumes:
+      - openplc_data:/workdir
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ── B1: IEC-104 Server Endpoint ────────────────────────────────
+  iec104_server:
+    build:
+      context: ./services/iec104_lab
+      dockerfile: Dockerfile.server
+    container_name: iec104_server
+    hostname: iec104_server
+    networks:
+      ot_lab:
+        ipv4_address: 172.20.0.30
+    environment:
+      - IEC104_PORT=2404
+      - API_URL=http://172.20.0.50:8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('127.0.0.1',2404)); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ── B1: IEC-104 Client (fake grid control centre) ──────────────
+  iec104_client:
+    build:
+      context: ./services/iec104_lab
+      dockerfile: Dockerfile.client
+    container_name: iec104_client
+    hostname: iec104_client
+    networks:
+      ot_lab:
+        ipv4_address: 172.20.0.31
+    environment:
+      - IEC104_SERVER_HOST=172.20.0.30
+      - IEC104_PORT=2404
+      - API_URL=http://172.20.0.50:8000
+    depends_on:
+      iec104_server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── B1: FUXA HMI ───────────────────────────────────────────────
+  fuxa:
+    image: frangoteam/fuxa:latest
+    container_name: fuxa
+    hostname: fuxa
+    networks:
+      ot_lab:
+        ipv4_address: 172.20.0.40
+    ports:
+      - "127.0.0.1:1881:1881"    # FUXA web UI (local only)
+    volumes:
+      - fuxa_data:/usr/src/app/_appdata
+      - ./services/fuxa_config/project.json:/usr/src/app/_appdata/project.json   # seeded project (devices + tags)
+    depends_on:
+      inverter1:
+        condition: service_healthy
+      inverter2:
+        condition: service_healthy
+      inverter3:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── B2: Passive Sensor (Zeek) ──────────────────────────────────
+  sensor:
+    build:
+      context: ./services/sensor
+      dockerfile: Dockerfile
+    container_name: sensor
+    hostname: sensor
+    networks:
+      ot_lab:
+        ipv4_address: 172.20.0.60
+    volumes:
+      - zeek_logs:/var/log/zeek
+      - pcap_data:/pcaps
+      - ./services/sensor/zeek_scripts:/etc/zeek/site/solar_farm
+    environment:
+      - CAPTURE_INTERFACE=${CAPTURE_INTERFACE:-lo}
+      - CAPTURE_MODE=${CAPTURE_MODE:-pcap_replay}    # live | pcap_replay
+      - PCAP_FILE=${PCAP_FILE:-/pcaps/normal_baseline.pcap}
+      - API_URL=http://172.20.0.50:8000
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    restart: unless-stopped
+
+  # ── B3+B4: API / Event Normaliser / Detection ──────────────────
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: api
+    hostname: api
+    networks:
+      ot_lab:
+        ipv4_address: 172.20.0.50
+    ports:
+      - "127.0.0.1:8000:8000"    # FastAPI (local only)
+    volumes:
+      - db_data:/app/data
+      - ./config:/app/config:ro
+      - ./services/detection:/app/detection:ro
+    environment:
+      - DB_PATH=/app/data/watchman.db
+      - CONFIG_DIR=/app/config
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    depends_on:
+      - inverter1
+      - inverter2
+      - inverter3
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # ── B5: Streamlit Dashboard ────────────────────────────────────
+  dashboard:
+    build:
+      context: ./services/dashboard
+      dockerfile: Dockerfile
+    container_name: dashboard
+    hostname: dashboard
+    networks:
+      ot_lab:
+        ipv4_address: 172.20.0.70
+    ports:
+      - "127.0.0.1:8501:8501"    # Streamlit (local only)
+    environment:
+      - API_URL=http://172.20.0.50:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

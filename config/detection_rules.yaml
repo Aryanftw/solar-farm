@@ -1,0 +1,169 @@
+# Detection Rules Configuration
+# Each rule has a stable ID, human-readable name, severity, and thresholds.
+# Rules are versioned; bump rule_version when changing thresholds.
+
+rule_version: "1.0"
+
+rules:
+  - id: RULE-001
+    name: UNKNOWN_DEVICE
+    description: "Source IP/MAC observed that is not in the authorised device manifest"
+    severity: high
+    enabled: true
+    dedupe_window_seconds: 300    # suppress repeat alerts for same device within 5 min
+    explanation_template: >
+      Device {src_ip} sent {protocol} traffic but is not in the authorised device manifest.
+      First observed at {first_seen_utc}. Role is unknown. Investigate whether this device
+      belongs to the lab network before permitting further communication.
+    recommended_action: >
+      Verify whether the device is a newly added lab component. If unrecognised, isolate it
+      from the OT network and investigate.
+
+  - id: RULE-002
+    name: UNAUTHORISED_MODBUS_WRITE
+    description: "Modbus write function code (FC5/6/15/16) from a non-approved client"
+    severity: high
+    enabled: true
+    dedupe_window_seconds: 60
+    write_function_codes: [5, 6, 15, 16]
+    explanation_template: >
+      Host {src_ip} sent Modbus function code {function_code} (write) to {dst_ip}:{dst_port}
+      targeting register/coil {register_address}. This host is not on the authorised Modbus
+      writer allowlist. Unauthorised register writes can alter inverter setpoints or status.
+    recommended_action: >
+      Block the source IP at the network perimeter. Verify that no setpoints were changed.
+      Review the inverter's holding registers.
+
+  - id: RULE-003
+    name: PROTECTED_SETPOINT_CHANGE
+    description: "Write to the configured protected setpoint register from a non-approved source"
+    severity: critical
+    enabled: true
+    dedupe_window_seconds: 30
+    protected_holding_registers: [0]   # active_power_setpoint
+    explanation_template: >
+      Host {src_ip} wrote to protected setpoint register {register_address} on inverter {dst_ip}.
+      Function code: {function_code}. Written value: {new_value} (raw). This register controls
+      the inverter's active power output. Only the FUXA HMI is permitted to write this setpoint
+      during a maintenance window.
+    recommended_action: >
+      Immediately verify the inverter's actual setpoint. If changed by an unauthorised source,
+      restore the expected setpoint and isolate the rogue client.
+
+  - id: RULE-004
+    name: OUT_OF_WINDOW_WRITE
+    description: "Control write occurs outside the configured maintenance window or from an unapproved source"
+    severity: high
+    enabled: true
+    dedupe_window_seconds: 60
+    explanation_template: >
+      Host {src_ip} performed a Modbus write (FC{function_code}) to {dst_ip} at {timestamp_utc}
+      (UTC). The configured maintenance window is {window_start}–{window_end} UTC on {window_days}.
+      This write occurred outside that window. Even authorised writers must operate within the
+      maintenance window for control changes.
+    recommended_action: >
+      Investigate who initiated the write. If accidental, reschedule the change. If malicious,
+      isolate the source and audit recent setpoint changes.
+
+  - id: RULE-005
+    name: MODBUS_WRITE_BURST
+    description: "Abnormal write rate or burst from one client to a device"
+    severity: medium
+    enabled: true
+    dedupe_window_seconds: 120
+    threshold_writes: 10         # writes per window
+    window_seconds: 30
+    explanation_template: >
+      Host {src_ip} sent {write_count} Modbus write requests to {dst_ip} in {window_seconds} seconds
+      (threshold: {threshold_writes} writes/{window_seconds}s). This abnormal burst may indicate
+      a scripted attack or misconfigured client.
+    recommended_action: >
+      Rate-limit or temporarily block the source. Verify whether the burst was a legitimate
+      configuration push or an attack.
+
+  - id: RULE-006
+    name: IEC104_UNEXPECTED_CONTROL
+    description: "IEC-104 control ASDU from an unapproved master or violating the control allowlist"
+    severity: critical
+    enabled: true
+    dedupe_window_seconds: 60
+    control_asdu_types: [45, 46, 47, 48, 49, 50, 51, 58, 59, 60, 61, 62, 63, 64, 65]  # C_SC, C_DC, C_RC, C_SE, C_BO...
+    explanation_template: >
+      IEC-104 control ASDU type {asdu_type} ({asdu_type_name}) originated from {src_ip}:{src_port}
+      to {dst_ip}:{dst_port}. The authorised IEC-104 master is {authorised_master_ip}. This source
+      is not on the authorised master list. Unauthorised control commands can affect grid-connected
+      equipment.
+    recommended_action: >
+      Disconnect the unauthorised IEC-104 client. Review whether any control actions were executed.
+      Audit IEC-104 connection logs for the session start time.
+
+  - id: RULE-007
+    name: IEC104_RATE_ANOMALY
+    description: "Abnormal IEC-104 connection or APDU/command rate"
+    severity: medium
+    enabled: true
+    dedupe_window_seconds: 120
+    threshold_connections: 5      # per minute
+    threshold_apdu_rate: 50       # APDUs per minute
+    explanation_template: >
+      IEC-104 traffic from {src_ip} exceeded normal rate: {observed_rate} {rate_unit} in the last
+      {window_seconds} seconds (threshold: {threshold}). This may indicate reconnection storms,
+      replay attacks, or a misconfigured master sending continuous interrogation commands.
+    recommended_action: >
+      Verify the IEC-104 master's configuration. If abnormal reconnections persist, check for
+      network issues or a rogue device attempting to establish a control session.
+
+  - id: RULE-ML-001
+    name: ML_ANOMALY
+    description: "IsolationForest model flagged an anomalous traffic pattern"
+    severity: medium
+    enabled: true
+    dedupe_window_seconds: 60
+    anomaly_score_threshold: -0.1   # IsolationForest: negative = anomalous
+    explanation_template: >
+      The anomaly detection model scored a traffic window from {src_ip} at {anomaly_score:.4f}
+      (threshold: {threshold}). Elevated feature(s): {top_features}. The model was trained on
+      normal lab polling traffic only. This score indicates that the observed traffic pattern
+      differs significantly from normal SCADA polling behaviour.
+    recommended_action: >
+      Review the alert timeline for corroborating deterministic rule alerts. If combined with
+      other indicators, investigate the source. Remember: ML anomaly alone is not proof of attack.
+    note: >
+      Model trained on synthetic lab baseline only. Not validated against real solar farm traffic.
+      Use in conjunction with deterministic rules.
+
+  - id: RULE-008
+    name: OUT_OF_RANGE_SETPOINT
+    description: "Modbus write command specifies a value outside the documented safe operating range for the register"
+    severity: high
+    enabled: true
+    dedupe_window_seconds: 30
+    explanation_template: >
+      Host {src_ip} commanded out-of-range value {commanded_value} (raw: {raw_value}) to holding register
+      {register_address} ({register_name}) on device {dst_ip}:{dst_port}. The permitted simulated lab range
+      is [{min_value}, {max_value}] {unit}. Commanded values outside safe bounds risk inverter instability,
+      equipment overload, or simulation trip. Simulated limits notice: All safety limits are simulated lab limits,
+      not real-world plant operating limits.
+    recommended_action: >
+      Inspect the commanding client. Verify whether the out-of-range setpoint was a typographical error,
+      misconfigured automation script, or hostile manipulation. Restore the setpoint to a safe operating
+      level within [{min_value}, {max_value}] {unit}.
+    simulated_limits_disclaimer: "All safety limits are simulated lab limits, not real-world plant operating limits."
+
+  - id: RULE-009
+    name: PROTOCOL_PEER_DRIFT
+    description: "Known device communicating with an unexpected peer or using an unapproved protocol/port compared to baseline"
+    severity: high
+    enabled: true
+    dedupe_window_seconds: 60
+    explanation_template: >
+      Known device {src_ip} (role: {src_role}) initiated communication with peer {dst_ip}:{dst_port}
+      using protocol {protocol}. This communication relationship is not present in the approved
+      baseline communication matrix. First observed at {first_seen_utc}. Baseline status: UNAPPROVED.
+      Investigate whether this connection represents lateral movement, misconfiguration, or a new
+      operational workflow requiring baseline approval.
+    recommended_action: >
+      Audit the connection between {src_ip} and {dst_ip}. If legitimate and verified by plant engineering,
+      record an explicit approval in the baseline communication matrix via POST /baseline/peers/approve.
+      If unauthorized, isolate the source host and verify device integrity.
+
